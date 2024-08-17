@@ -1,7 +1,7 @@
 --[[
-  Dev: VanLong2k12
-  Lib: LongHuyLibV5
-  github: LongHuyHUB | Premium
+  Dev: redz9999
+  Lib: redzLibV5
+  github: REDzHUB
   
   Game: Roblox-MemeSea
 ]]
@@ -12,6 +12,7 @@ local _env = getgenv and getgenv() or {}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 local Player = Players.LocalPlayer
@@ -48,7 +49,33 @@ local Vector3_new = Vector3.new
 
 local _huge = math.huge
 
+task.spawn(function()
+  if not _env.LoadedHideUsername then
+    _env.LoadedHideUsername = true
+    local Label = Player.PlayerGui.MainGui.PlayerName
+    
+    local function Update()
+      local Level = PlayerLevel.Value
+      local IsMax = Level >= MSetting.Setting.MaxLevel
+      Label.Text = ("%s • Lv. %i%s"):format("Anonymous", Level, IsMax and " (Max)" or "")
+    end
+    
+    Label:GetPropertyChangedSignal("Text"):Connect(Update)Update()
+  end
+end)
+
 local Loaded, Funcs, Folders = {}, {}, {} do
+  Loaded.ItemsPrice = {
+    Aura = function()
+      return Funcs:GetMaterial("Meme Cube") > 0 and Funcs:GetData("Money") >= 10000000 -- 1x Meme Cube, $10.000.000
+    end,
+    FlashStep = function()
+      return Funcs:GetData("Money") >= 100000 -- $100.000
+    end,
+    Instinct = function()
+      return Funcs:GetData("Money") >= 2500000 -- $2.500.000
+    end
+  }
   Loaded.Shop = {
     {"Weapons", {
       {"Buy Katana", "$5.000 Money", {"Weapon_Seller", "Doge"}},
@@ -61,7 +88,7 @@ local Loaded, Funcs, Folders = {}, {}, {} do
     }},
     {"Ability", {
       {"Buy Flash Step", "$100.000 Money", {"Ability_Teacher", "Giga Chad"}},
-      {"Buy Instict", "$2.500.000 Money", {"Ability_Teacher", "Nugget Man"}},
+      {"Buy Instinct", "$2.500.000 Money", {"Ability_Teacher", "Nugget Man"}},
       {"Buy Aura", "1x Meme Cube and $10.000.000", {"Ability_Teacher", "Aura Master"}}
     }},
     {"Fighting Style", {
@@ -84,7 +111,7 @@ local Loaded, Funcs, Folders = {}, {}, {} do
     if Modules:FindFirstChild("CodeList") then
       local List = require(Modules.CodeList)
       for Code, Info in pairs(type(List) == "table" and List or {}) do
-        if type(Code) == "string" and type(Info) == "table" and Info.Status then RedeemCode(Code)_wait(1) end
+        if type(Code) == "string" and type(Info) == "table" and Info.Status then RedeemCode(Code) end
       end
     end
   end
@@ -126,6 +153,17 @@ local Loaded, Funcs, Folders = {}, {}, {} do
   
   Funcs.AbilityUnlocked = function(self, Ablt)
     return Ability:FindFirstChild(Ablt) and Ability[Ablt].Value
+  end
+  
+  Funcs.CanBuy = function(self, Item)
+    if Loaded.ItemsPrice[Item] then
+      return Loaded.ItemsPrice[Item]()
+    end
+    return false
+  end
+  
+  Funcs.GetData = function(self, Data)
+    return PlayerData:FindFirstChild(Data) and PlayerData[Data].Value or 0
   end
   
   for Npc,Quest in pairs(MQuestSettings) do
@@ -225,10 +263,11 @@ local function BringMobsTo(_Enemie, CFrame, SBring)
 end
 
 local function KillMonster(_Enemie, SBring)
-  local Enemie = typeof(_Enemie) == "Instance" and _Enemie or GetNextEnemie(_Enemie)
-  if IsAlive(Enemie) and Enemie.PrimaryPart then
-    GoTo(Enemie.PrimaryPart.CFrame * Settings.FarmCFrame)EquipWeapon()PlayerClick()
-    if Settings.BringMobs then BringMobsTo(_Enemie, Enemie.PrimaryPart.CFrame, SBring) end
+  local Enemy = typeof(_Enemie) == "Instance" and _Enemie or GetNextEnemie(_Enemie)
+  if IsAlive(Enemy) and Enemy.PrimaryPart then
+    GoTo(Enemy.PrimaryPart.CFrame * Settings.FarmCFrame)EquipWeapon()
+    if not Enemy:FindFirstChild("Reverse_Mark") then PlayerClick() end
+    if Settings.BringMobs then BringMobsTo(_Enemie, Enemy.PrimaryPart.CFrame, SBring) end
     return true
   end
 end
@@ -338,9 +377,6 @@ _env.FarmFuncs = {
       return true
     end
   end)},
-  {"Bring Fruits", (function()
-    
-  end)},
   {"Race V2 Orb", (function()
     if Funcs:GetPlayerLevel() >= 500 then
       local Quest, Enemy = "Dancing Banana Quest", "Sogga"
@@ -368,14 +404,18 @@ _env.FarmFuncs = {
     if Funcs:GetPlayerLevel() >= 1000 then
       local RaidMap = GetRaidMap()
       if RaidMap then
-        local Enemie = GetRaidEnemies()
-        if Enemie then KillMonster(Enemie, true) else
-          local Spawn = RaidMap:FindFirstChild("Spawn_Location")
-          if Spawn then GoTo(Spawn.CFrame) end
+        if RaidMap:GetAttribute("Starting") ~= 0 then
+          OtherEvent.MiscEvents.StartRaid:FireServer("Start")_wait(1)
+        else
+          local Enemie = GetRaidEnemies()
+          if Enemie then KillMonster(Enemie, true) else
+            local Spawn = RaidMap:FindFirstChild("Spawn_Location")
+            if Spawn then GoTo(Spawn.CFrame) end
+          end
         end
       else
         local Raid = Region:FindFirstChild("RaidArea")
-        if Raid then GoTo(Raid.CFrame, true) end
+        if Raid then GoTo(CFrame_new(Raid.Position)) end
       end
       return true
     end
@@ -402,60 +442,212 @@ if not _env.LoadedFarm then
   end)
 end
 
-local sitinklib = loadstring(game:HttpGet("https://github.com/ErutTheTeru/uilibrary/blob/main/Sitink%20Lib/Source.lua?raw=true"))()
-local Notify = sitinklib:Notify({
-	["Title"] = "LongHuy Hub",
-	["Description"] = "- from Teru",
-	["Color"] = Color3.fromRGB(127.00000002980232, 146.00000649690628, 242.00000077486038),
-	["Content"] = "Welcome to LongHuy Hub",
-	["Time"] = 1,
-	["Delay"] = 10
+local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/REDzHUB/RedzLibV5/main/Source.Lua"))()
+local Window = redzlib:MakeWindow({ Title = "redz Hub : Meme Sea", SubTitle = "by redz9999", SaveFolder = "redzHub-MemeSea.json" })
+Window:AddMinimizeButton({
+  Button = { Image = "rbxassetid://15298567397", BackgroundTransparency = 0 },
+  Corner = { CornerRadius = UDim.new(0, 6) }
 })
-local sitinkgui = sitinklib:Start({
-    ["Name"] = "LongHuyV2 Hub",
-    ["Description"] = "- from Teru UI",
-    ["Info Color"] = Color3.fromRGB(5.000000176951289, 59.00000028312206, 113.00000086426735),
-    ["Logo Info"] = "rbxassetid://18811558048",
-    ["Logo Player"] = "rbxassetid://18811558048",
-    ["Name Info"] = "LongHuy Hub Info",
-    ["Name Player"] = "Havanlong_",
-    ["Info Description"] = "discord.gg/3Aatp4Nhjp",
-    ["Tab Width"] = 135,
-    ["Color"] = Color3.fromRGB(127.00000002980232, 146.00000649690628, 242.00000077486038),
-    ["CloseCallBack"] = function() end
-})
-local MainTab = sitinkgui:MakeTab("Discord")
-local Section = MainTab:Section({
-    ["Title"] = "Discord Server",
-    ["Content"] = "Join Discord Pls"
-})
-local Button = Section:Button({
-    Title = "Discord",
-    Content = "Coyp Discord Link",
-    Callback = function()
-    setclipboard("https://discord.com/invite/BnK9vhvm")
+
+local Tabs = {
+  Discord = Window:MakeTab({"Discord", "Info"}),
+  MainFarm = Window:MakeTab({"Farm", "Home"}),
+  Items = Window:MakeTab({"Items", "Swords"}),
+  Stats = Window:MakeTab({"Stats", "Signal"}),
+  Teleport = Window:MakeTab({"Teleport", "Locate"}),
+  Shop = Window:MakeTab({"Shop", "ShoppingCart"}),
+  Misc = Window:MakeTab({"Misc", "Settings"})
+}
+
+Window:SelectTab(Tabs.MainFarm)
+
+local function AddToggle(Tab, Settings, Flag)
+  Settings.Description = type(Settings[2]) == "string" and Settings[2]
+  Settings.Default = type(Settings[2]) ~= "string" and Settings[2]
+  Settings.Flag = Settings.Flag or Flag
+  Settings.Callback = function(Value) _env[Settings.Flag] = Value end
+  Tab:AddToggle(Settings)
+end
+
+local _Discord = Tabs.Discord do
+  _Discord:AddDiscordInvite({
+    Name = "redz Hub | Community",
+    Description = "Join our discord community to receive information about the next update",
+    Logo = "rbxassetid://17382040552",
+    Invite = "https://discord.gg/7aR7kNVt4g"
+  })
+end
+
+local _MainFarm = Tabs.MainFarm do
+  _MainFarm:AddDropdown({"Farm Tool", Loaded.WeaponsList, Settings.ToolFarm, function(Value)
+    Settings.ToolFarm = Value
+  end, "Main/FarmTool"})
+  _MainFarm:AddSection("Farm")
+  AddToggle(_MainFarm, {"Auto Farm Level", ("MaxLevel: %i"):format(MSetting.Setting.MaxLevel)}, "Level Farm")
+  AddToggle(_MainFarm, {"Auto Farm Nearest"}, "Nearest Farm")
+  _MainFarm:AddSection("Enemies")
+  _MainFarm:AddDropdown({"Select Enemie", Loaded.EnemeiesList, {Loaded.EnemeiesList[1]}, function(Value)
+    _env.SelecetedEnemie = Value
+  end, "Main/SEnemy"})
+  AddToggle(_MainFarm, {"Auto Farm Selected"}, "FS Enemie")
+  AddToggle(_MainFarm, {"Take Quest [ Enemie Selected ]", true}, "FS Take Quest")
+  _MainFarm:AddSection("Boss Farm")
+  AddToggle(_MainFarm, {"Auto Meme Beast [ Spawns every 30 Minutes ]", "Drops: Portal ( <25% ), Meme Cube ( <50% )"}, "Meme Beast")
+  _MainFarm:AddSection("Raid")
+  AddToggle(_MainFarm, {"Auto Farm Raid", "Req: Level 1000"}, "Raid Farm")
+end
+
+local _Items = Tabs.Items do
+  _Items:AddSection("Powers")
+  _Items:AddButton({"Reroll Powers 10X [ 250k Money ]", function()
+    OtherEvent.MainEvents.Modules:FireServer("Random_Power", {
+      Type = "Decuple",
+      NPCName = "Floppa Gacha",
+      GachaType = "Money"
+    })
+  end})
+  _Items:AddToggle({"Auto Store Powers", false, function(Value)
+    _env.AutoStorePowers = Value
+    while _env.AutoStorePowers do _wait()
+      for _,v in ipairs(Player.Backpack:GetChildren()) do
+        if v:IsA("Tool") and v.ToolTip == "Power" and v:GetAttribute("Using") == nil then
+          v.Parent = Player.Character
+          OtherEvent.MainEvents.Modules:FireServer("Eatable_Power", { Action = "Store", Tool = v })
+        end
+      end
     end
-})
-local MainTab = sitinkgui:MakeTab("MainFarm")
-local Section = MainTab:Section({
-    ["Title"] = "Farm",
-    ["Content"] = "Farm lv"
-})
-local Dropdown = Section:Dropdown({
-    Title = "Tool Farm",
-    Multi = true,
-    Options = {"Melee", "Weapons", "Fruits"},
-    Default = {"Melee"},
-    Place Holder Text = "Select Weapons",
-    Callback = function(Value)
-        Settings.ToolFarm = Value
+  end, "AutoStore"})
+  _Items:AddSection("Aura Color")
+  _Items:AddButton({"Reroll Aura Color [ 10 Gems ]", function()
+    OtherEvent.MainEvents.Modules:FireServer("Reroll_Color", "Halfed Sorcerer")
+  end})
+  _Items:AddSection("Bosses")
+  AddToggle(_Items, {"Auto Giant Pumpkin", "Drops: Pumpkin Head ( <10% ), Nugget Man ( <25% )"}, "Giant Pumpkin")
+  AddToggle(_Items, {"Auto Evil Noob", "Drops: Yellow Blade ( <5% ), Noob Friend ( <10% )"}, "Evil Noob")
+  AddToggle(_Items, {"Auto Lord Sus", "Drops: Purple Sword ( <5% ), Sus Pals ( <10% )"}, "Lord Sus")
+  _Items:AddSection("Race")
+  AddToggle(_Items, {"Auto Awakening Orb", "Req: Level 500"}, "Race V2 Orb")
+  _Items:AddSection("Weapons")
+  AddToggle(_Items, {"Auto Floppa [ Exclusive Sword ]"}, "_Floppa Sword")
+  _Items:AddSection("Popcat")
+  _Items:AddToggle({"Auto Popcat", false, function(Value)
+    _env.AutoPopcat = Value
+    local ClickDetector = Island.FloppaIsland.Popcat_Clickable.Part.ClickDetector
+    local Heartbeat = RunService.Heartbeat
+    if Value then GoTo(CFrame_new(400, -37, -588)) end
+    
+    while _env.AutoPopcat do Heartbeat:Wait()
+      fireclickdetector(ClickDetector)
     end
-})
-local Toggle = Section:Toggle({
-	Title= "Auto Farm Level",
-	Content = "Max 2400",
-	Default = true,
-	Callback = function(Value) 
-		print(Value)
-	end
-})
+  end, "AutoPopcat"})
+end
+
+local _Stats = Tabs.Stats do
+  local StatsName, SelectedStats = {
+    ["Power"] = "MemePowerLevel", ["Health"] = "DefenseLevel",
+    ["Weapon"] = "SwordLevel", ["Melee"] = "MeleeLevel"
+  }, {}
+  
+  _Stats:AddSlider({"Select Points", 1, 100, Settings.AutoStats_Points, 1, function(Value)
+    Settings.AutoStats_Points = Value
+  end, "Stats/SelectPoints"})
+  _Stats:AddToggle({"Auto Stats", false, function(Value)
+    _env.AutoStats = Value
+    local _Points = PlayerData.SkillPoint
+    while _env.AutoStats do _wait(0.5)
+      for _,Stats in pairs(SelectedStats) do
+        local _p, _s = _Points.Value, PlayerData[StatsName[_]]
+        if Stats and _p > 0 and _s.Value < MSetting.Setting.MaxLevel then
+          OtherEvent.MainEvents.StatsFunction:InvokeServer({
+            ["Target"] = StatsName[_],
+            ["Action"] = "UpgradeStats",
+            ["Amount"] = math.clamp(Settings.AutoStats_Points, 0, MSetting.Setting.MaxLevel - _s.Value)
+          })
+        end
+      end
+    end
+  end})
+  _Stats:AddSection("Select Stats")
+  for _,v in next, StatsName do
+    _Stats:AddToggle({_, false, function(Value)
+      SelectedStats[_] = Value
+    end, "Stats_" .. _})
+  end
+end
+
+local _Teleport = Tabs.Teleport do
+  _Teleport:AddSection("Teleport")
+  _Teleport:AddDropdown({"Islands", Location:WaitForChild("SpawnLocations"):GetChildren(), {}, function(Value)
+    GoTo(Location.SpawnLocations[Value].CFrame)
+  end})
+  _Teleport:AddDropdown({"Quests", Location:WaitForChild("QuestLocaion"):GetChildren(), {}, function(Value)
+    GoTo(Location.QuestLocaion[Value].CFrame)
+  end})
+end
+
+local _Shop = Tabs.Shop do
+  _Shop:AddSection("Auto Buy")
+  _Shop:AddToggle({"Auto Buy Abilities", false, function(Value)
+    _env.AutoBuyAbility = Value
+    while _env.AutoBuyAbility do  _wait(1)
+      if not Funcs:AbilityUnlocked("Instinct") and Funcs:CanBuy("Instinct") then
+        OtherEvent.MainEvents.Modules:FireServer("Ability_Teacher", "Nugget Man")
+      elseif not Funcs:AbilityUnlocked("FlashStep") and Funcs:CanBuy("FlashStep") then
+        OtherEvent.MainEvents.Modules:FireServer("Ability_Teacher", "Giga Chad")
+      elseif not Funcs:AbilityUnlocked("Aura") and Funcs:CanBuy("Aura") then
+        OtherEvent.MainEvents.Modules:FireServer("Ability_Teacher", "Aura Master")
+      else wait(3) end
+    end
+  end, "Auto Buy Ability", Desc = "Aura, Instinct & Flash Step"})
+  
+  for _,s in next, Loaded.Shop do
+    _Shop:AddSection({s[1]})
+    for _,item in pairs(s[2]) do
+      local buyfunc = item[3]
+      if type(buyfunc) == "table" then
+        buyfunc = function()
+          OtherEvent.MainEvents.Modules:FireServer(unpack(item[3]))
+        end
+      end
+      
+      _Shop:AddButton({item[1], buyfunc, Desc = item[2]})
+    end
+  end
+end
+
+local _Misc = Tabs.Misc do
+  _Misc:AddButton({"Redeem All Codes", Funcs.RAllCodes})
+  _Misc:AddSection("Settings")
+  _Misc:AddSlider({"Farm Distance", 5, 15, 1, 8, function(Value)
+    Settings.FarmDistance = Value or 8
+    Settings.FarmCFrame = CFrame_new(0, Value or 8, 0) * CFrame_Angles(math.rad(-90), 0, 0)
+  end, "Farm Distance"})
+  _Misc:AddToggle({"Auto Aura", Settings.AutoHaki, function(Value) Settings.AutoHaki = Value end, "Auto Haki"})
+  _Misc:AddToggle({"Auto Attack", Settings.AutoClick, function(Value) Settings.AutoClick = Value end, "Auto Attack"})
+  _Misc:AddToggle({"Bring Mobs", Settings.BringMobs, function(Value) Settings.BringMobs = Value end, "Bring Mobs"})
+  _Misc:AddToggle({"Anti AFK", Settings.AntiAFK, function(Value) Settings.AntiAFK = Value end, "Anti AFK"})
+  _Misc:AddSection("Team")
+  _Misc:AddButton({"Join Cheems Team", function()
+    OtherEvent.MainEvents.Modules:FireServer("Change_Team", "Cheems Recruiter")
+  end})
+  _Misc:AddButton({"Join Floppa Team", function()
+    OtherEvent.MainEvents.Modules:FireServer("Change_Team", "Floppa Recruiter")
+  end})
+  _Misc:AddSection("Others")
+  _Misc:AddToggle({"Remove Notifications", false, function(Value)
+    Player.PlayerGui.AnnounceGui.Enabled = not Value
+  end, "Remove Notifications"})
+end
+
+task.spawn(function()
+  if not _env.AntiAfk then
+    _env.AntiAfk = true
+    
+    while _wait(60*10) do
+      if Settings.AntiAFK then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+      end
+    end
+  end
+end)
